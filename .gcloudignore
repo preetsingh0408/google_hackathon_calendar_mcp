@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+.pnpm-store
+.vscode
+.env
+dist
+coverage
+
+!bun.lock

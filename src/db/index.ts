@@ -1,24 +1,22 @@
-import { Database } from "bun:sqlite";
-import type { Database as DatabaseType } from "bun:sqlite";
-let db: DatabaseType;
+import { Firestore } from "@google-cloud/firestore";
 
-export function initDb() {
-	db = new Database("calendar.db");
+const projectId = "inlaid-span-491507-b6";
 
-	db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      description TEXT,
-      start DATETIME NOT NULL,
-      end DATETIME NOT NULL
-    )
-  `);
+let firestore: Firestore;
 
-	return db;
+export function getFirestore() {
+	if (!firestore) {
+		firestore = new Firestore({
+			projectId,
+		});
+		console.log("✅ Firestore client initialized");
+	}
+	return firestore;
 }
 
-export function getDb() {
-	if (!db) throw new Error("DB not initialized. Call initDb() first.");
-	return db;
+export const eventsCollection = getFirestore().collection("events");
+
+export async function initDb() {
+	// Firestore doesn't need explicit DB creation
+	console.log("✅ Firestore ready (no init required)");
 }

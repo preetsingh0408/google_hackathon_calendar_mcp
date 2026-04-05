@@ -1,43 +1,71 @@
-import { getDb } from "../db";
+import { randomUUID } from "crypto";
+import { eventsCollection } from "../db";
 import { Event } from "../models/event";
 
-export function createEvent(event: Omit<Event, "id">): number {
-	const db = getDb();
-	const result = db
-		.prepare(
-			"INSERT INTO events (title, description, start, end) VALUES (?, ?, ?, ?)",
-		)
-		.run(event.title, event.description ?? "", event.start, event.end);
-	return Number(result.lastInsertRowid ?? 0);
+function normalizeEvent(id: string, data: Record<string, any>): Event {
+	return {
+		id,
+		title: data.title,
+		description: data.description ?? "",
+		start: data.start,
+		end: data.end,
+		created_at: data.created_at,
+		updated_at: data.updated_at,
+	};
 }
-export function listEvents(limit?: number): Event[] {
-	const db = getDb();
+
+export async function createEvent(event: Omit<Event, "id">): Promise<string> {
+	const id = randomUUID();
+
+	await eventsCollection.doc(id).set({
+		title: event.title,
+		description: event.description ?? "",
+		start: event.start,
+		end: event.end,
+		created_at: new Date().toISOString(),
+	});
+
+	return id;
+}
+
+export async function listEvents(limit?: number): Promise<Event[]> {
+	let query: FirebaseFirestore.Query = eventsCollection.orderBy("start", "asc");
+
 	if (limit) {
-		return db
-			.prepare("SELECT * FROM events ORDER BY start ASC LIMIT ?")
-			.all(limit) as Event[];
+		query = query.limit(limit);
 	}
-	return db
-		.prepare("SELECT * FROM events ORDER BY start ASC")
-		.all() as Event[];
+
+	const snapshot = await query.get();
+	return snapshot.docs.map((doc) => normalizeEvent(doc.id, doc.data()));
 }
-export function deleteEvent(id: number): boolean {
-	const db = getDb();
-	const result = db.prepare("DELETE FROM events WHERE id = ?").run(id);
-	return result.changes > 0;
+
+export async function deleteEvent(id: string): Promise<boolean> {
+	const docRef = eventsCollection.doc(id);
+	const doc = await docRef.get();
+
+	if (!doc.exists) return false;
+
+	await docRef.delete();
+	return true;
 }
-export function updateEvent(event: Event): boolean {
-	const db = getDb();
-	const result = db
-		.prepare(
-			"UPDATE events SET title = ?, description = ?, start = ?, end = ? WHERE id = ?",
-		)
-		.run(
-			event.title,
-			event.description ?? "",
-			event.start,
-			event.end,
-			event.id,
-		);
-	return result.changes > 0;
+
+export async function updateEvent(event: Event): Promise<boolean> {
+	if (!event.id) {
+		throw new Error("id is required for update");
+	}
+
+	const docRef = eventsCollection.doc(event.id);
+	const doc = await docRef.get();
+
+	if (!doc.exists) return false;
+
+	await docRef.update({
+		title: event.title,
+		description: event.description ?? "",
+		start: event.start,
+		end: event.end,
+		updated_at: new Date().toISOString(),
+	});
+
+	return true;
 }

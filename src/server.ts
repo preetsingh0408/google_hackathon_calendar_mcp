@@ -3,10 +3,8 @@ import { cors } from "hono/cors";
 import { StreamableHTTPTransport } from "@hono/mcp";
 import { serve } from "@hono/node-server";
 import { createMcpServer } from "./mcp";
-import { initDb } from "./db";
 
 async function main() {
-	await initDb();
 	const app = new Hono();
 	const port = Number.parseInt(process.env.PORT ?? "8787", 10);
 

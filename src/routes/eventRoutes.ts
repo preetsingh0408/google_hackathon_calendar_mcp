@@ -26,7 +26,7 @@ export const eventSchema = baseEventSchema.refine(validateEventRange, {
 	path: ["end"],
 });
 export const eventWithIdSchema = baseEventSchema
-	.extend({ id: z.number().int().positive() })
+	.extend({ id: z.string().min(1) })
 	.refine(validateEventRange, {
 		message: "end must be after start",
 		path: ["end"],
@@ -64,9 +64,9 @@ export function registerEventTools(mcpServer: any) {
 		"delete_event",
 		{
 			description: "Delete a calendar event by id.",
-			inputSchema: z.object({ id: z.number().int().positive() }),
+			inputSchema: z.object({ id: z.string().min(1) })
 		},
-		async ({ id }: { id: number }) => {
+		async ({ id }: { id: string }) => {
 			const deleted = await deleteEvent(id);
 			return {
 				content: [{ type: "text", text: JSON.stringify({ deleted }) }],
