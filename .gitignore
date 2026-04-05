@@ -1,3 +1,5 @@
+# Ignore all SQLite database files
+*.db
 src/mcp.ts
 build
 node_modules
